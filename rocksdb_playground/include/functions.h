@@ -1,13 +1,13 @@
 #include <rocksdb/c.h>
 
 struct rocksdb_txdb_params {
-    rocksdb_transactiondb_t *tx_db;
-    rocksdb_options_t *options;
-    rocksdb_transactiondb_options_t *txdb_options;
-    rocksdb_writeoptions_t *write_options;
-    rocksdb_readoptions_t *read_options;
-    rocksdb_transaction_t *tx;
-    rocksdb_transaction_options_t* tx_options;
+    rocksdb_transactiondb_t *tx_db;                   // the database
+    rocksdb_options_t *options;                       // options for the base database (not transaction database)
+    rocksdb_transactiondb_options_t *txdb_options;    // options for the transaction database
+    rocksdb_writeoptions_t *write_options;            // write options
+    rocksdb_readoptions_t *read_options;              // read options
+    rocksdb_transaction_t *tx;                        // transaction pointer
+    rocksdb_transaction_options_t* tx_options;        // transaction options
 };
 
 void init_rocksdb_txdb(void);

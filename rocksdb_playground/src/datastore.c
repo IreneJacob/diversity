@@ -6,6 +6,7 @@
 
 #include "functions.h"
 
+// initialize by setting the read, write options of a transaction database
 void init_rocksdb_txdb(void){
   uint64_t mem_budget = 1048576;
   txrocks.options = rocksdb_options_create();
@@ -22,6 +23,7 @@ void init_rocksdb_txdb(void){
   txrocks.read_options = rocksdb_readoptions_create();
 }
 
+// to deconstruct, we delete the database options, transaction and close the database
 int txdb_deconstruct(void){
   if (txrocks.txdb_options) {
     rocksdb_transactiondb_options_destroy(txrocks.txdb_options);
@@ -34,14 +36,7 @@ int txdb_deconstruct(void){
   return 0;
 }
 
-inline int txdb_is_open(void) {
-    if (txrocks.tx_db == NULL) {
-        fprintf(stderr, "DB is not opened\n");
-        return 0;
-    }
-    return 1;
-}
-
+// open a new database with the name provided in the argument (db represented as a folder)
 int open_txdb(char* db_path){
   char* err = NULL;
   txrocks.tx_db = rocksdb_transactiondb_open( txrocks.options, txrocks.txdb_options, db_path, &err);
@@ -52,6 +47,7 @@ int open_txdb(char* db_path){
   return 0;
 }
 
+// close (but not delete) the database
 int close_txdb(void){
   if (txrocks.tx_db == NULL) {
     fprintf(stderr, "DB is not opened\n");
@@ -62,6 +58,7 @@ int close_txdb(void){
   return 0;
 }
 
+// delete the database (removes folder)
 int destroy_txdb(char* db_path){
   char* err = NULL;
   rocksdb_destroy_db(txrocks.options, db_path, &err);
@@ -72,6 +69,7 @@ int destroy_txdb(char* db_path){
   return 0;
 }
 
+// create a new transaction in the current database
 int begin_tx(void){
   if (txrocks.tx_db == NULL) {
     fprintf(stderr, "DB is not opened\n");
@@ -80,6 +78,8 @@ int begin_tx(void){
   txrocks.tx = rocksdb_transaction_begin(txrocks.tx_db, txrocks.write_options, txrocks.tx_options, NULL);
   return 0;
 }
+
+// commit the transaction (changes will be saved to database)
 int commit_tx(void){
   if (txrocks.tx_db == NULL) {
     fprintf(stderr, "DB is not opened\n");
@@ -93,6 +93,8 @@ int commit_tx(void){
   }
   return 0;
 }
+
+// delete the transaction (changes that were not committed will not be saved to the database)
 int delete_tx(void){
   if (txrocks.tx_db == NULL) {
     fprintf(stderr, "DB is not opened\n");
@@ -103,6 +105,8 @@ int delete_tx(void){
   }
   return 0;
 }
+
+// read values from the transaction (uncommitted changes will be read)
 int handle_tx_read(char *key, size_t keylen){
   if (txrocks.tx_db == NULL) {
     fprintf(stderr, "DB is not opened\n");
@@ -111,7 +115,6 @@ int handle_tx_read(char *key, size_t keylen){
   char *err = NULL;
   char *val;
   size_t vallen;
-
   val = rocksdb_transaction_get(txrocks.tx, txrocks.read_options, key, keylen, &vallen, &err);
   if (err != NULL) {
       fprintf(stdout, "Read Error: %s\n", err);
@@ -126,6 +129,7 @@ int handle_tx_read(char *key, size_t keylen){
   return 0;
 }
 
+// write key, value pairs in the transaction
 int handle_tx_write(char *key, size_t keylen, char *val, size_t vallen){
   if (txrocks.tx_db == NULL) {
     fprintf(stderr, "DB is not opened\n");
@@ -139,6 +143,8 @@ int handle_tx_write(char *key, size_t keylen, char *val, size_t vallen){
   }
   return 0;
 }
+
+// delete a value from the transaction (could also be used to delete a value from the database, if the tx is committed)
 int handle_tx_delete(char *key, size_t keylen){
   if (txrocks.tx_db == NULL) {
     fprintf(stderr, "DB is not opened\n");
@@ -153,6 +159,7 @@ int handle_tx_delete(char *key, size_t keylen){
   return 0;
 }
 
+// create a save point in the transaction
 int handle_save(){
   if (txrocks.tx_db == NULL) {
     fprintf(stderr, "DB is not opened\n");
@@ -166,6 +173,7 @@ int handle_save(){
   return 0;
 }
 
+// rollback to saved point, changes after the savepoint will no longer be seen in the transaction
 int handle_rollback(){
   if (txrocks.tx_db == NULL) {
     fprintf(stderr, "DB is not opened\n");
@@ -184,7 +192,7 @@ int handle_rollback(){
   return 0;
 }
 
-
+// list the key value pairs in the database, as if the transaction was committed
 int handle_tx_list(void){
   if (txrocks.tx_db == NULL) {
     fprintf(stderr, "DB is not opened\n");
@@ -222,6 +230,7 @@ int handle_tx_list(void){
   return 0;
 }
 
+// list the key value pairs in the database without considering the changes made by an uncommitted transaction
 int handle_txdb_list(void){
   if (txrocks.tx_db == NULL) {
     fprintf(stderr, "DB is not opened\n");
@@ -232,7 +241,6 @@ int handle_txdb_list(void){
       fprintf(stderr, "Create Iterator has an error\n");
       return -1;
   }
-
   printf("%-20s | %-20s\n", "Key", "Value");
   printf("------------------------------------------------\n");
   for (rocksdb_iter_seek_to_first(iterator);
