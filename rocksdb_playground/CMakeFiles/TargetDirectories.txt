@@ -1,3 +1,0 @@
-/home/vagrant/diversity/rocksdb_playground/CMakeFiles/edit_cache.dir
-/home/vagrant/diversity/rocksdb_playground/CMakeFiles/rebuild_cache.dir
-/home/vagrant/diversity/rocksdb_playground/CMakeFiles/run.dir
